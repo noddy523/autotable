@@ -1,0 +1,69 @@
+package com.example.yourmod;
+
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.button.Button;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.text.StringTextComponent;
+
+import java.util.List;
+
+public class PetInfoGui extends Screen {
+
+    private String petName;
+    private int xpToNextLevel;
+    private double xpGainedPerHour;
+    private double estimatedTimeToNextLevel;
+
+    public PetInfoGui() {
+        super(new StringTextComponent("Pet Info"));
+        // Set initial values
+        this.petName = getCurrentPetName(); // Fetch the current pet name from the tab list
+        this.xpToNextLevel = 100; // Example value, replace with actual data
+        this.xpGainedPerHour = 50.0; // Example value, replace with actual data
+        this.estimatedTimeToNextLevel = calculateEstimatedTime(); // Calculate based on XP values
+    }
+
+    @Override
+    protected void init() {
+        // Add a button to close the GUI
+        this.addButton(new Button(this.width / 2 - 50, this.height - 30, 100, 20, new StringTextComponent("Close"), button -> {
+            Minecraft.getInstance().setScreen(null);
+        }));
+    }
+
+    @Override
+    public void render(int mouseX, int mouseY, float partialTicks) {
+        this.renderBackground();
+        super.render(mouseX, mouseY, partialTicks);
+
+        // Draw the GUI components
+        drawCenteredString(this.font, "Current Pet: " + petName, this.width / 2, 20, 0xFFFFFF);
+        drawCenteredString(this.font, "XP to Next Level: " + xpToNextLevel, this.width / 2, 50, 0xFFFFFF);
+        drawCenteredString(this.font, "XP Gained Per Hour: " + xpGainedPerHour, this.width / 2, 80, 0xFFFFFF);
+        drawCenteredString(this.font, "Estimated Time to Next Level: " + estimatedTimeToNextLevel + " minutes", this.width / 2, 110, 0xFFFFFF);
+    }
+
+    private double calculateEstimatedTime() {
+        if (xpGainedPerHour <= 0) {
+            return 0; // Prevent division by zero
+        }
+        return (xpToNextLevel / xpGainedPerHour) * 60; // Calculate estimated time in minutes
+    }
+
+    private String getCurrentPetName() {
+        // Access the tab list to get the pet name
+        List<Component> playerList = Minecraft.getInstance().gui.getTabList().getEntries();
+        
+        // Iterate through the player list and check for the pet name
+        for (Component player : playerList) {
+            String playerName = player.getString();
+            // Check if the player name contains the pet name (this may vary based on how pets are displayed)
+            if (playerName.contains("Pet")) { // Change "Pet" to the specific indicator used for pets
+                return playerName; // Return the pet name
+            }
+        }
+        return "No pet found"; // Default if no pet is found
+    }
+}
