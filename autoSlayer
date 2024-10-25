@@ -1,0 +1,150 @@
+package com.example.autoslayermod;
+
+import com.mojang.logging.LogUtils;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.boss.BossEntity;
+import net.minecraft.entity.monster.ZombieEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TextComponent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.network.NetworkEvent;
+
+import javax.annotation.Nullable;
+import java.util.HashSet;
+import java.util.Set;
+
+@Mod(AutoSlayerMod.MODID)
+public class AutoSlayerMod {
+    public static final String MODID = "autoslayermod";
+    private static String weaponName = "diamond_sword"; // Default weapon name
+    private static String slayerTier = "T1"; // Default Slayer Tier
+    private static boolean isSneaking = false;
+
+    public AutoSlayerMod() {
+        // Register mod event listeners
+    }
+
+    @SubscribeEvent
+    public void onClientSetup(FMLClientSetupEvent event) {
+        Minecraft.getInstance().keyboardListener.setKeyCallback(key -> {
+            if (key.getKey() == GLFW.GLFW_KEY_SEMICOLON) {
+                openMaddoxBatphone(); // Open the Maddox Batphone on semicolon press
+            } else if (key.getKey() == GLFW.GLFW_KEY_RIGHT_SHIFT) {
+                Minecraft.getInstance().displayGuiScreen(new SlayerTierInputScreen(this::setSlayerTier));
+            } else if (key.getKey() == GLFW.GLFW_KEY_W) {
+                Minecraft.getInstance().displayGuiScreen(new WeaponInputScreen(this::setWeaponName));
+            }
+        });
+    }
+
+    private void openMaddoxBatphone() {
+        // Logic to simulate using the Maddox Batphone and selecting Revenant Slayer
+        System.out.println("Using Maddox Batphone..."); // Log to console for debugging
+
+        // Example of selecting Revenant Slayer and Tier (mocking behavior)
+        Minecraft.getInstance().player.sendMessage(new StringTextComponent("Selected Revenant Slayer, Tier: " + slayerTier), Minecraft.getInstance().player.getUUID());
+
+        // Here you can add further logic to interact with the UI or commands
+        startFightingStrategy();
+    }
+
+    private void startFightingStrategy() {
+        // Implement custom strategies for boss fighting
+        LivingEntity targetBoss = findNearestBoss();
+        if (targetBoss != null) {
+            sneakAndAttackBoss(targetBoss);
+        }
+    }
+
+    private LivingEntity findNearestBoss() {
+        // Logic to find the nearest boss entity in the world
+        for (LivingEntity entity : Minecraft.getInstance().world.getEntitiesOfClass(LivingEntity.class)) {
+            if (entity instanceof BossEntity) {
+                return entity; // Return the nearest boss found
+            }
+        }
+        return null; // No boss found
+    }
+
+    private void sneakAndAttackBoss(LivingEntity boss) {
+        // Implement the strategy for attacking the boss
+        isSneaking = true;
+        Minecraft.getInstance().player.setSneaking(isSneaking);
+        
+        ItemStack bossWeapon = new ItemStack(Item.REGISTRY.getObject(weaponName)); // Get weapon based on user selection
+        Minecraft.getInstance().player.setHeldItem(Hand.MAIN_HAND, bossWeapon);
+        
+        // Attack the boss while sneaking
+        Minecraft.getInstance().player.attackEntityFrom(DamageSource.causePlayerDamage(Minecraft.getInstance().player), bossWeapon.getAttackDamage());
+    }
+
+    public void setWeaponName(String weapon) {
+        weaponName = weapon; // Set the selected weapon name
+    }
+
+    public void setSlayerTier(String tier) {
+        slayerTier = tier; // Set the selected Slayer Tier
+    }
+
+    public static class WeaponInputScreen extends Screen {
+        private final String input = "";
+
+        protected WeaponInputScreen(java.util.function.Consumer<String> onInput) {
+            super(new StringTextComponent("Enter Weapon Name"));
+        }
+
+        @Override
+        public void render(int mouseX, int mouseY, float partialTicks) {
+            super.render(mouseX, mouseY, partialTicks);
+            drawString(this.font, "Weapon Name: " + input, this.width / 2 - 100, this.height / 2);
+        }
+
+        @Override
+        public boolean charTyped(char codePoint, int modifiers) {
+            if (codePoint == '\n') {
+                onInput.accept(input); // Set the weapon name
+                Minecraft.getInstance().displayGuiScreen(null); // Close the GUI
+                return true;
+            }
+            input += codePoint; // Add character to input
+            return true;
+        }
+    }
+
+    public static class SlayerTierInputScreen extends Screen {
+        private final String input = "";
+
+        protected SlayerTierInputScreen(java.util.function.Consumer<String> onInput) {
+            super(new StringTextComponent("Enter Slayer Tier (e.g., T1, T2)"));
+        }
+
+        @Override
+        public void render(int mouseX, int mouseY, float partialTicks) {
+            super.render(mouseX, mouseY, partialTicks);
+            drawString(this.font, "Slayer Tier: " + input, this.width / 2 - 100, this.height / 2);
+        }
+
+        @Override
+        public boolean charTyped(char codePoint, int modifiers) {
+            if (codePoint == '\n') {
+                onInput.accept(input); // Set the Slayer tier
+                Minecraft.getInstance().displayGuiScreen(null); // Close the GUI
+                return true;
+            }
+            input += codePoint; // Add character to input
+            return true;
+        }
+    }
+}
