@@ -1,0 +1,90 @@
+package com.jelly.MightyMiner.config;
+
+import cc.polyfrost.oneconfig.config.Config;
+import cc.polyfrost.oneconfig.config.annotations.Exclude;
+import cc.polyfrost.oneconfig.config.annotations.Page;
+import cc.polyfrost.oneconfig.config.core.OneConfigSetting;
+import cc.polyfrost.oneconfig.config.data.MinMaxInt;
+import cc.polyfrost.oneconfig.config.gui.GuiLabel;
+import cc.polyfrost.oneconfig.config.gui.GuiSliderSetting;
+import cc.polyfrost.oneconfig.config.gui.GuiCheckboxSetting;
+import cc.polyfrost.oneconfig.config.gui.GuiTextBoxSetting;
+import com.jelly.MightyMiner.utils.InventoryUtils;
+import net.minecraft.client.Minecraft;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagList;
+
+@Page(name = "Gemstone Macro Settings")
+public class GemstoneConfig extends Config {
+
+    @Exclude
+    private final Minecraft mc = Minecraft.getMinecraft();
+
+    // Configuration settings
+    public boolean enableFastMine = false;
+    public boolean enableOpenChests = false;
+    public boolean enableRefuelWithAbiphone = false;
+    public int minY = 10;
+    public int maxY = 100;
+    public int miningSpeedCheckDelay = 1000; // Delay in ms
+
+    // Fields to display real-time mining stats
+    @Exclude
+    private String currentMiningSpeed = "Fetching...";
+    @Exclude
+    private String pickaxeName = "None";
+
+    public GemstoneConfig() {
+        super("Gemstone Macro Settings", "GemstoneConfig", "1.0");
+        
+        // Use OneConfig tabs and pages
+        initializeConfig();
+    }
+
+    /**
+     * Initialize the OneConfig structure with settings and real-time data display.
+     */
+    private void initializeConfig() {
+        add(new GuiCheckboxSetting("Enable Fast Mining", this, "enableFastMine", "Toggle fast mining mode.", enableFastMine));
+        add(new GuiCheckboxSetting("Open Treasure Chests", this, "enableOpenChests", "Automatically open discovered treasure chests.", enableOpenChests));
+        add(new GuiCheckboxSetting("Refuel with Abiphone", this, "enableRefuelWithAbiphone", "Automatically refuel using Abiphone when necessary.", enableRefuelWithAbiphone));
+        add(new GuiSliderSetting("Min Y Level", this, "minY", "Minimum Y level for mining.", new MinMaxInt(0, 256), minY));
+        add(new GuiSliderSetting("Max Y Level", this, "maxY", "Maximum Y level for mining.", new MinMaxInt(0, 256), maxY));
+        add(new GuiTextBoxSetting("Mining Speed Check Delay (ms)", this, "miningSpeedCheckDelay", "Time delay for checking mining speed.", String.valueOf(miningSpeedCheckDelay)));
+
+        // Add a label to show real-time mining information
+        add(new GuiLabel(() -> "Mining Speed: " + currentMiningSpeed));
+        add(new GuiLabel(() -> "Equipped Pickaxe: " + pickaxeName));
+    }
+
+    /**
+     * Update real-time information such as mining speed and pickaxe name.
+     */
+    @Override
+    public void tick() {
+        super.tick();
+        updateMiningInformation();
+    }
+
+    /**
+     * Method to update the current mining speed and pickaxe status from in-game data.
+     */
+    private void updateMiningInformation() {
+        // Example of getting mining speed from player's inventory
+        ItemStack itemStack = InventoryUtils.getStackInOpenContainerSlot(13); // Example slot number
+        if (itemStack != null && itemStack.getDisplayName().contains("Pickaxe")) {
+            pickaxeName = itemStack.getDisplayName();
+            NBTTagList lore = InventoryUtils.getLore(itemStack);
+            if (lore != null) {
+                for (int i = 0; i < lore.tagCount(); i++) {
+                    if (lore.get(i).toString().contains("Mining Speed")) {
+                        currentMiningSpeed = lore.get(i).toString().substring(19).replaceAll("[\\D]", "") + " blocks/sec";
+                    }
+                }
+            }
+        } else {
+            currentMiningSpeed = "Unknown";
+            pickaxeName = "None";
+        }
+    }
+}
